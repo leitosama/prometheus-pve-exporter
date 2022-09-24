@@ -1,45 +1,73 @@
-Prometheus Proxmox VE Exporter
-==============================
+Prometheus Proxmox VE Exporter (Yandex Unified Agent Edition)
+=============================================================
 
-|Build Status| |Package Version|
+This is an exporter that exposes information gathered from Proxmox VE node for use by the Prometheus monitoring system with fixes for Yandex Unified Agent. 
 
-This is an exporter that exposes information gathered from Proxmox VE
-node for use by the Prometheus monitoring system.
+Yandex Unified Agent blocked all metrics and labels called `name` so I decided to rename all labels to `object_name`
 
 Installation
 ------------
 
 Note: Python 2 is not supported anymore as of version 2.0.0. Instead use Python 3.6 or better.
 
-Using pip:
-==========
-
-.. code:: shell
-
-    python3 -m pip install prometheus-pve-exporter
-    pve-exporter --help
-
 Using docker:
 =============
 
-.. code:: shell
-
-   docker pull prompve/prometheus-pve-exporter
-
-Example: Display usage message:
+Build a container:
 
 .. code:: shell
 
-   docker run -it --rm prompve/prometheus-pve-exporter --help
+   docker build -t prometheus-pve-exporter .
 
 
 Example: Run the image with a mounted configuration file and published port:
 
 .. code:: shell
 
-   docker run --name prometheus-pve-exporter -d -p 127.0.0.1:9221:9221 -v /path/to/pve.yml:/etc/pve.yml prompve/prometheus-pve-exporter
+   docker run --name prometheus-pve-exporter -d -p 127.0.0.1:9221:9221 -v /path/to/pve.yml:/etc/pve.yml prometheus-pve-exporter:latest
 
 Prometheus PVE Exporter will now be reachable at http://localhost:9221/.
+
+Using setup.py:
+=============
+
+Build and install:
+
+.. code:: shell
+
+   python3 setup.py build
+   python3 setup.py install
+
+Exporter is now located in /usr/local/bin/pve_exporter
+
+Example: Run the image with a mounted configuration file and published port:
+
+.. code:: shell
+
+   /usr/local/bin/pve_exporter /usr/local/bin/pve_exporter /etc/prometheus/pve.yml
+
+Prometheus PVE Exporter will now be reachable at http://localhost:9221/.
+
+You also can create systemd unit (thanks @js94x for `Gather metrics of your Proxmox server with Prometheus`_ article):
+
+.. code:: shell
+
+    cat <<EOF> /etc/systemd/system/prometheus-pve-exporter.service
+
+::
+
+    [Unit]
+    Description=Prometheus exporter for Proxmox VE
+    Documentation=https://github.com/leitosama/prometheus-pve-exporter
+
+    [Service]
+    Restart=always
+    User=pve-exporter
+    ExecStart=/usr/local/bin/pve_exporter /etc/prometheus/pve.yml
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
 
 Usage
 -----
@@ -59,7 +87,7 @@ Usage
     optional arguments:
       -h, --help            show this help message and exit
       --collector.status, --no-collector.status
-                            Exposes Node/VM/CT-Status (default: True)
+                          Exposes Node/VM/CT-Status (default: True)
       --collector.version, --no-collector.version
                             Exposes PVE version info (default: True)
       --collector.node, --no-collector.node
@@ -285,10 +313,6 @@ Grafana Dashboards
 
 * `Proxmox via Prometheus by Pietro Saccardi`_
 
-.. |Build Status| image:: https://github.com/prometheus-pve/prometheus-pve-exporter/actions/workflows/ci.yml/badge.svg
-   :target: https://github.com/prometheus-pve/prometheus-pve-exporter/actions/workflows/ci.yml
-.. |Package Version| image:: https://img.shields.io/pypi/v/prometheus-pve-exporter.svg
-   :target: https://pypi.python.org/pypi/prometheus-pve-exporter
 .. _wiki: https://github.com/prometheus-pve/prometheus-pve-exporter/wiki
 .. _`token authentication`: https://pve.proxmox.com/wiki/User_Management#pveum_tokens
 .. _`proxmoxer.ProxmoxAPI()`: https://pypi.python.org/pypi/proxmoxer
@@ -296,3 +320,4 @@ Grafana Dashboards
 .. _`supports Let's Encrypt`: https://pve.proxmox.com/pve-docs/pve-admin-guide.html#sysadmin_certificate_management
 .. _`Proxmox Documentation`: https://pve.proxmox.com/pve-docs/pve-admin-guide.html#pveum_permission_management
 .. _`Proxmox via Prometheus by Pietro Saccardi`: https://grafana.com/dashboards/10347
+.. _`Gather metrics of your Proxmox server with Prometheus`: https://community.hetzner.com/tutorials/proxmox-prometheus-metrics

@@ -102,12 +102,13 @@ class ClusterNodeCollector:
     def collect(self): # pylint: disable=missing-docstring
         nodes = [entry for entry in self._pve.cluster.status.get() if entry['type'] == 'node']
         labels = ['id', 'level', 'name', 'nodeid']
+        metric_labels = ['id', 'level', 'object_name', 'nodeid']
 
         if nodes:
             info_metrics = GaugeMetricFamily(
                 'pve_node_info',
                 'Node info',
-                labels=labels)
+                labels=metric_labels)
 
             for node in nodes:
                 label_values = [str(node[key]) for key in labels]
@@ -218,7 +219,7 @@ class ClusterResourcesCollector:
             'guest': GaugeMetricFamily(
                 'pve_guest_info',
                 'VM/CT info',
-                labels=['id', 'node', 'name', 'type']),
+                labels=['id', 'node', 'object_name', 'type']),
             'storage': GaugeMetricFamily(
                 'pve_storage_info',
                 'Storage info',
@@ -227,11 +228,11 @@ class ClusterResourcesCollector:
 
         info_lookup = {
             'lxc': {
-                'labels': ['id', 'node', 'name', 'type'],
+                'labels': ['id', 'node', 'object_name', 'type'],
                 'gauge': info_metrics['guest'],
             },
             'qemu': {
-                'labels': ['id', 'node', 'name', 'type'],
+                'labels': ['id', 'node', 'object_name', 'type'],
                 'gauge': info_metrics['guest'],
             },
             'storage': {
@@ -244,7 +245,12 @@ class ClusterResourcesCollector:
             restype = resource['type']
 
             if restype in info_lookup:
-                label_values = [resource.get(key, '') for key in info_lookup[restype]['labels']]
+                label_values = []
+                for key in info_lookup[restype]['labels']:
+                    if key == 'object_name':
+                        label_values.append(resource.get('name', ''))
+                        continue
+                    label_values.append(resource.get(key, ''))
                 info_lookup[restype]['gauge'].add_metric(label_values, 1)
 
             label_values = [resource['id']]
